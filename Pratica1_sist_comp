@@ -1,0 +1,43 @@
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+
+/* Aléxei Felipe Paim - 20250264
+ Pratica 1 - Sistemas computacionais para automação*/ 
+
+
+
+int main(){
+
+   int i,j; // inicia a variavel do loop 
+   
+   pid_t A,B; 
+   
+	printf("P1\n"); //Imprime a P1
+	
+	for(i=1;i<3;i++){ // Loop que ira gerar os filhos de P1, e tambem ira auxiliar na ecriação dos filhos deles 
+	
+		A=fork();// inicia a duplicidade de processos
+		
+		if(A==0){ // Se o fork de A é filho faça:
+		
+			printf("P%d\n",i+1); //Imprime os nomes dos flhos 
+			
+			if(i==1){ // Se o contador do laço for for igual a 1 faça ele criar mais dois filhos:
+				
+				for(j=0;j<2;j++){ //Loop que ira gerar os filhos de P2
+				   
+				     	B=fork();// inicia a duplicidade de processos
+				     
+				     	if(B==0){ // Se o fork de B é filho faça
+					
+						printf("P5\n"); //Imprime  P5
+						getchar();
+					       }
+					}
+				}
+			getchar();
+		}
+	} getchar(); // pausa o programa para que seja possivel analisar a arvore
+return 0;
+}

@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <semaphore.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+// Aléxei Felipe Paim
+// 20250264
+//Pratica 5 - Jantar dos filosofos
+
+struct philo_data{
+	int id;
+	pthread_mutex_t* fork_right;
+	pthread_mutex_t* fork_left;
+};
+
+enum philo_state {THINKING, EATING, HUNGRY};
+
+void* philosopher(void *p){
+	struct philo_data *dt = (struct philo_data*)p;
+	enum philo_state state = THINKING;
+
+	printf("Philosopher %d running.\n", dt->id);
+	fflush(stdout);
+
+	/*FIXME: Insert philosophers sincronization !!! */
+
+	while(1){
+		switch(state){
+			case THINKING:// Pensado
+				printf("Philosopher %d thinking.\n", dt->id);
+				fflush(stdout);
+				sleep(rand()%10);
+				state = HUNGRY; // Com Fome - depois de pensar o filosofo tem fome 
+				pthread_mutex_lock(dt->fork_right); //Tranca o garfo da direita
+				break;
+
+			case HUNGRY:
+				if(pthread_mutex_trylock(dt->fork_right) == 0){ // se o gafo da direira ja estiver trancado
+					
+					pthread_mutex_trylock(dt->fork_left); // tenta trancar o garfo da esquerda
+					printf("Philosopher %d hungry.\n", dt->id); // se der certo o filosofo come
+					fflush(stdout);
+					state = EATING; // Comendo
+					sleep(rand()%10);
+				}else{ pthread_mutex_unlock(dt->fork_right); // caso contrario solte o garfo da direita 	
+				}
+				break;
+
+			case EATING:
+
+				printf("Philosopher %d eating.\n", dt->id);
+				fflush(stdout);
+				sleep(rand()%10);
+				// depois de comer o filoso solta os dois garfos 
+				pthread_mutex_unlock(dt->fork_right);
+				pthread_mutex_unlock(dt->fork_left);
+				state = THINKING; //Volta a pensar
+				break;
+		}
+
+
+	}
+}
+
+int main(int argc, char** argv){
+	pthread_mutex_t *fork_list;
+	unsigned int n_philo, i;
+	struct philo_data* dt;
+	pthread_t t;
+	
+	
+	/* Para passar o numero de filosofos é preciso chamar ./nome_do arquivo numero de filosofos -> exp: ./nome_do arquivo 5 */
+
+	if(argc < 2){
+		printf("Usage: %s <nummber of philosophers>\n", argv[0]);
+	
+		exit(0);
+	}
+
+	srand(time(NULL));
+
+	n_philo = atoi(argv[1]);
+	
+
+	fork_list = (pthread_mutex_t *) malloc(n_philo * sizeof(pthread_mutex_t));
+
+	pthread_mutex_init(&fork_list[0], NULL);
+	for(i=0; i<n_philo; i++){
+		dt = (struct philo_data*)malloc(sizeof(struct philo_data));
+		dt->id = i;
+		dt->fork_right = &fork_list[i];
+		if(i != n_philo - 1){
+			pthread_mutex_init(&fork_list[i+1], NULL);
+			dt->fork_left = &fork_list[i+1];
+		}else{
+			dt->fork_left = &fork_list[0];
+		}
+		pthread_create(&t, NULL, philosopher, dt);
+	}
+
+
+	printf("Press any key to finish.\n");
+	getchar();
+
+	/*All data allocated will be free finishing the program.*/
+
+	return 0;
+
+}

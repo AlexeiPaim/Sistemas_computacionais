@@ -1,0 +1,81 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+// Alexei Felipe Paim - 20250264
+
+
+// Cria as variaves Mutex 
+pthread_mutex_t a = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t b = PTHREAD_MUTEX_INITIALIZER;	
+pthread_mutex_t c = PTHREAD_MUTEX_INITIALIZER;		
+	
+void * th1(){
+	while(1){
+	pthread_mutex_lock (&c);// Abre o mutex para c
+		printf("1\n");
+		fflush(stdout);
+		sleep(1);
+		pthread_mutex_unlock (&a);// fecha o mutex para a
+	}
+}
+
+void * th2(){
+	while(1){
+	pthread_mutex_lock (&a);// Abre o mutex para a
+		printf("2\n");
+		fflush(stdout);
+		sleep(2);
+		pthread_mutex_unlock (&b);// fecha o mutex para b
+	}
+}
+
+void * th3(){
+	while(1){
+		pthread_mutex_lock (&b);// Abre o mutex para b
+		printf("3\n");
+		fflush(stdout);
+		sleep(3);
+		pthread_mutex_unlock (&c);// fecha o mutex para c
+	}
+}
+
+
+int main(int argc, char **argv){
+	pthread_t thread1, thread2, thread3;
+	
+	// Inicia as variaves Mutex 
+	pthread_mutex_init(&a,NULL);
+	pthread_mutex_init(&b,NULL);
+	pthread_mutex_init(&c,NULL);
+	
+	//força a entrada para o print th1, para então seguir a sequencia correta
+	pthread_mutex_lock (&a); // Abre o mutex para a
+	pthread_mutex_lock (&b); // Abre o mutex para b
+	
+
+	if(pthread_create(&thread1, NULL, th1, NULL)) {
+		fprintf(stderr, "Error creating thread\n");
+		return 1;
+	}
+
+	if(pthread_create(&thread2, NULL, th2, NULL)) {
+		fprintf(stderr, "Error creating thread\n");
+		return 1;
+	}
+	
+	if(pthread_create(&thread3, NULL, th3, NULL)) {
+		fprintf(stderr, "Error creating thread\n");
+		return 1;
+	}
+	
+
+	if(pthread_join(thread1, NULL)) {
+		fprintf(stderr, "Error joining thread\n");
+		return 1;
+	}
+
+	return 0;
+}

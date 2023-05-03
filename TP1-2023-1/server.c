@@ -1,8 +1,8 @@
-/* Adaptado de https://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner */
-
 /* Trabalho pratico 1
 	Aléxei Felipe Paim (20250264)
 	Fabricio Fabricio Zimmermann (19150429)
+	
+Codigo Adaptado de https://github.com/crmoratelli/tcp-server/blob/master/tcp-server-multithread.c
 */	
 
 // inclui as bibliotecas necessárias:
@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <time.h> 
 #include <pthread.h>
+
 
 // **************************************************************************
 // definicoes iniciais
@@ -44,6 +45,18 @@ struct client_data{
 };
 
  int w=0; //Ininicia variavel global worker 
+ 
+ void tempo_ale(){ // função para Gerar um tempo aleatori de espera 
+ 
+ 	srand(time(NULL)); //Inicializa o gerador de numeros aleatorios
+ 	int random_segu = rand() % 6; // gera um numero eleatorio entre 0 e 5
+ 	printf(" / / / / %d / / / / \n",random_segu);
+    	fflush(stdout);
+    
+ 	sleep (random_segu);
+ }
+ 
+
 
 //Implementa a função que lida com as conexões dos clientes:
 void * connection_identifier(void* cd){
@@ -71,7 +84,6 @@ void * connection_identifier(void* cd){
 	   i++;
     	}
         
-   
    if (strcmp(sendBuff, "worker") == 0) { // Verifica se conteudo recebido é igual a Worker 
    	if(w < 10){
    		printf("worker conectouu\n");
@@ -117,12 +129,19 @@ void * connection_identifier(void* cd){
        
     	}
    
+   	pthread_mutex_lock(&mutex); //tranca mutex para realização a verificação do array de Workers
+   	
 	for (j; j <= (sizeof(vet_worker)/4);j++){ // Laço para percorrer as posiçoes do array de workers 
 	   
 	   	if(j == (sizeof(vet_worker)/4)){ // se percorreu até a ultima posição e não a worker vago, imprime :
 	   		 memset(sendBuff, 0, sizeof(sendBuff));
    			 snprintf(sendBuff, BUFFER_SIZE, "Sistema ocupado. Tente mais tarde\n");
    			 send(client->sk, sendBuff, strlen(sendBuff) + 1, 0);
+   			  printf("--- Sem Workers disponiveis! \n---");
+   			 fflush(stdout);
+   			 
+   			 pthread_mutex_unlock(&mutex);// libera mutex para realização a verificação do array de Workers
+    
 	   	
 	   		break;
 	  	}
@@ -131,13 +150,13 @@ void * connection_identifier(void* cd){
     			printf ("conectado ao worker %d\n",j);
 	   		fflush(stdout);
     		
-    			pthread_mutex_lock(&mutex); //tranca mutex
+    			//pthread_mutex_lock(&mutex); //tranca mutex
     			
     				vet_worker[j].flag = 1; // Muda flag
     				
-    			pthread_mutex_unlock(&mutex);// libera mutex
+    			pthread_mutex_unlock(&mutex);// libera mutex para realização a verificação do array de Workers
     			
-    			sleep(1.5); //espera
+    			tempo_ale(); //espera um tempo aletorio
     			
     			
     				
@@ -151,10 +170,14 @@ void * connection_identifier(void* cd){
        	 		
        	 		vet_worker[j].flag = 0; // Libera o worker
        	 		
-    			break;
-        }
-        }
+       	 		
 
+       	 		
+    			break;
+       		 }
+        } 
+        
+      
    }
     
     return NULL;
@@ -190,6 +213,9 @@ int main(int argc, char *argv[]){
 
 	/* Inicia a escuta na porta */
     listen(listenfd, 10); 
+    printf("Server Aguardando conexão!");
+    fflush(stdout);
+    
 
     while(1) {
     	/* Aloca a memória para a estrutura que armazena os dados de quem conectou */
